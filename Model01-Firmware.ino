@@ -123,7 +123,7 @@ enum { MACRO_VERSION_INFO,
   *
   */
 
-enum { QWERTY, NUMPAD, FUNCTION }; // layers
+enum { DVORAK, GAME, NUMPAD, FUNCTION }; // layers
 
 /* This comment temporarily turns off astyle's indent enforcement
  *   so we can make the keymaps actually resemble the physical key layout better
@@ -132,7 +132,7 @@ enum { QWERTY, NUMPAD, FUNCTION }; // layers
 
 const Key keymaps[][ROWS][COLS] PROGMEM = {
 
-  [QWERTY] = KEYMAP_STACKED
+  [DVORAK] = KEYMAP_STACKED
   (___,          Key_1, Key_2, Key_3, Key_4, Key_5, Key_LEDEffectNext,
    Key_Tab, Key_Quote, Key_Comma, Key_Period, Key_P, Key_Y, Key_RightArrow,
    Key_Backtick,   Key_A, Key_O, Key_E, Key_U, Key_I,
@@ -143,10 +143,24 @@ const Key keymaps[][ROWS][COLS] PROGMEM = {
    Key_Equals,  Key_6, Key_7, Key_8,     Key_9,         Key_0,         Key_Minus,
    Key_PageUp,     Key_F, Key_G, Key_C,     Key_R,         Key_L,         Key_Slash,
                   Key_D, Key_H, Key_T,     Key_N,         Key_S, Key_Quote,
-   Key_PageDown,  Key_B, Key_M, Key_W, Key_V,    Key_Z,     Key_RightShift,
+   LockLayer(GAME),  Key_B, Key_M, Key_W, Key_V,    Key_Z,     Key_RightShift,
    Key_RightShift, Key_RightControl, Key_Enter, Key_Spacebar,
    ShiftToLayer(FUNCTION)),
 
+  [GAME] = KEYMAP_STACKED
+  (___,          Key_1, Key_2, Key_3, Key_4, Key_5, Key_LEDEffectNext,
+   Key_Tab,      Key_T, Key_Q, Key_W, Key_E, Key_R, Key_Backtick,
+   Key_PageUp,   Key_B, Key_A, Key_W, Key_D, Key_G,
+   Key_LeftShift,Key_Z, Key_X, Key_S, Key_C, Key_V, Key_Escape,
+   Key_LeftControl, Key_Space, Key_Escape, Key_LeftShift,
+   ShiftToLayer(FUNCTION),
+
+   M(MACRO_ANY),  Key_6, Key_7, Key_8,     Key_9,         Key_0,         LockLayer(NUMPAD),
+   Key_Enter,     Key_Y, Key_U, Key_I,     Key_O,         Key_P,         Key_Equals,
+                  Key_H, Key_J, Key_K,     Key_L,         Key_Semicolon, Key_Quote,
+   ___,  Key_N, Key_M, Key_Comma, Key_Period,    Key_Slash,     Key_Minus,
+   Key_RightShift, Key_LeftAlt, Key_Spacebar, Key_RightControl,
+   ShiftToLayer(FUNCTION)),
 
   [NUMPAD] =  KEYMAP_STACKED
   (___, ___, ___, ___, ___, ___, ___,
@@ -176,7 +190,7 @@ const Key keymaps[][ROWS][COLS] PROGMEM = {
                                Key_LeftArrow,          Key_DownArrow,            Key_UpArrow,              Key_RightArrow,  ___,              ___,
    Key_PcApplication,          Consumer_Mute,          Consumer_VolumeDecrement, Consumer_VolumeIncrement, ___,             Key_Backslash,    Key_Pipe,
    ___, ___, Key_Enter, ___,
-   ___)
+   ___),
 
 };
 
@@ -289,6 +303,17 @@ void hostPowerManagementEventHandler(kaleidoscope::HostPowerManagement::Event ev
   toggleLedsOnSuspendResume(event);
 }
 
+void layerLED(bool postClear) {
+  if (!postClear)
+    return;
+
+  if (Layer.top() == GAME) {
+    LEDControl.setCrgbAt(2, 9, CRGB(255, 0, 0));
+  } else if (Layer.top() == DVORAK) {
+    LEDControl.refreshAt(2, 9);
+  }
+}
+
 /** The 'setup' function is one of the two standard Arduino sketch functions.
   * It's called when your keyboard first powers up. This is where you set up
   * Kaleidoscope and any plugins.
@@ -378,6 +403,7 @@ void setup() {
   // This avoids over-taxing devices that don't have a lot of power to share
   // with USB devices
   LEDOff.activate();
+  Kaleidoscope.useLoopHook(layerLED);
 }
 
 /** loop is the second of the standard Arduino sketch functions.
